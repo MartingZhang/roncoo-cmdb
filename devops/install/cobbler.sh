@@ -9,23 +9,22 @@ net=192.168.63.0
 begin=192.168.63.250
 end=192.168.63.253
 echo "$ip    www.xiaoluo.com" >> /etc/hosts
-yum install cobbler cobbler-web pykickstart dhcp debmirror syslinux cman fence-agents  vim -y
-/etc/init.d/iptables stop
-/etc/init.d/httpd start
-/etc/init.d/cobblerd start
-service cobblerd restart
+yum install cobbler cobbler-web pykickstart dhcp debmirror syslinux cman fence-agents vim net-tools -y
+systemctl start cobblerd
+systemctl start httpd
+systemctl start iptables
 sed -i -e 's/= yes/= no/g' /etc/xinetd.d/rsync
 sed -i -e 's/= yes/= no/g' /etc/xinetd.d/tftp
 sed -i 's@next_server: 127.0.0.1@next_server: '$ip'@g' /etc/cobbler/settings
 sed -i 's@server: 127.0.0.1@server: '$ip'@g' /etc/cobbler/settings
 cp /usr/share/syslinux/pxelinux.0 /var/lib/cobbler/loaders/
-cp  /usr/share/syslinux/meminfo.c32  /var/lib/cobbler/loaders/
+cp /usr/share/syslinux/meminfo.c32 /var/lib/cobbler/loaders/
 sed -i 's$@arches="i386"$#@arches="i386"$g' /etc/debmirror.conf
-sed  -i 's$@dists="sid"$#@dists="sid"$g' /etc/debmirror.conf
+sed -i 's$@dists="sid"$#@dists="sid"$g' /etc/debmirror.conf
 sed -i 's@default_password_crypted@#default_password_crypted@g' /etc/cobbler/settings
 echo "default_password_crypted:  "$1$ac756ac7$erF27Ljjp3rDItLVqHLOg/"" >> /etc/cobbler/settings
 cobbler get-loaders
-service cobblerd restart
+systemctl restart cobblerd
 cobbler sync
 ####用cobbler check 查看到底有哪些步骤没有操作完成。
 cobbler check
@@ -43,10 +42,10 @@ subnet $net netmask 255.255.255.0 {
 next-server $ip;
 filename="pxelinux.0";
 EOF
-/etc/init.d/dhcpd restart
-service xinetd  restart
-service cobblerd restart
+systemctl restart cobblerd
+systemctl restart dhcpd
+systemctl restart xinetd
 mkdir /opt/xiaoluo
 mount /dev/cdrom /opt/xiaoluo 
-cobbler import --name=centos-6.5-x86_64 --path=/opt/xiaoluo
+cobbler import --name=centos-7.4-x86_64 --path=/opt/xiaoluo
 
